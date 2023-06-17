@@ -12,7 +12,9 @@ namespace Business.Abstract
         IDataResult<User> RegisterSecondaryAccount(UserForRegister userForRegister, string password);
         IDataResult<User> Login(UserForLogin userForLogin);
         IDataResult<User> GetByMailConfirmValue(string value);
+        IDataResult<User> GetById(int id);
         IResult UserExists(string email);
+        IResult SendConfirmEmail(User user);
         IResult Upadate(User user);
         IResult CompanyExistx(Company company);
         IDataResult<AccessToken> CreateAccessToken(User user, int companyId);

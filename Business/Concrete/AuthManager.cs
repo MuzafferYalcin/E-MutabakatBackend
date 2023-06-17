@@ -47,6 +47,11 @@ namespace Business.Concrete
             return new SuccesDataResult<AccessToken>(accessToken);
         }
 
+        public IDataResult<User> GetById(int id)
+        {
+            return new SuccesDataResult<User>(_userService.GetById(id));
+        }
+
         public IDataResult<User> GetByMailConfirmValue(string value)
         {
             return new SuccesDataResult<User>(_userService.GetByMailConfirmValue(value));
@@ -99,6 +104,12 @@ namespace Business.Concrete
                 PasswordHash = user.PasswordHash,
                 PasswordSalt = user.PasswordSalt
             };
+            SendConfirmEmail(user);
+
+            return new SuccesDataResult<UserCompanyDto>(userCompanyDto,Messages.UserRegistered);
+        }
+        void SendConfirmEmail(User user)
+        {
 
             string subject = "Kullancı Kayıt Onay Maili";
             string link = "https://localhost:7188/api/Auth/confirmuser?value=" + user.MailConfirmValue;
@@ -107,11 +118,11 @@ namespace Business.Concrete
 
             var mailTemplate = _mailTemplateService.GetByTemplateName("Kayıt", 8);
             string templateBody = mailTemplate.Data.Value;
-            templateBody = templateBody.Replace("{{title}}",subject);
-            templateBody = templateBody.Replace("{{message}}",body);
-            templateBody = templateBody.Replace("{{link}}",link);
-            templateBody = templateBody.Replace("{{linkDescription}}",linkDescription);
-          
+            templateBody = templateBody.Replace("{{title}}", subject);
+            templateBody = templateBody.Replace("{{message}}", body);
+            templateBody = templateBody.Replace("{{link}}", link);
+            templateBody = templateBody.Replace("{{linkDescription}}", linkDescription);
+
 
             var mailParameter = _mailParameterService.Get(8);
             SendMailDto mailDto = new SendMailDto()
@@ -123,10 +134,7 @@ namespace Business.Concrete
             };
 
             _mailService.SendMail(mailDto);
-
-            return new SuccesDataResult<UserCompanyDto>(userCompanyDto,Messages.UserRegistered);
         }
-
         public IDataResult<User> RegisterSecondaryAccount(UserForRegister userForRegister, string password)
         {
             byte[] passwordHash, passwordSalt;
@@ -159,6 +167,12 @@ namespace Business.Concrete
             if (_userService.GetByMail(email) != null)
                 return new ErrorResult(Messages.UserAlreadyExists);
             return new SuccessResult();
+        }
+
+        IResult IAuthService.SendConfirmEmail(User user)
+        {
+            SendConfirmEmail(user);
+            return new SuccessResult(Messages.MailConfirmSendSuccessful); 
         }
     }
 }

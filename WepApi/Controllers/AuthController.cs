@@ -88,5 +88,17 @@ namespace WepApi.Controllers
             }
             return BadRequest(result.Message);
         }
+
+        [HttpGet("sendConfirmEmail")]
+        public IActionResult SendConfirmEmail(int userId)
+        {
+            var user = _authService.GetById(userId).Data;
+            var result = _authService.SendConfirmEmail(user);
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+            return BadRequest(result.Message);
+        }
     }
 }
