@@ -42,15 +42,15 @@ namespace WepApi.Controllers
         }
 
         [HttpPost("registerSecondatyAccount")]
-        public IActionResult RegistersecondaryAccount(UserForRegister userForRegister, int companyId)
+        public IActionResult RegistersecondaryAccount(UserForRegisterToSecondAccountDto userForRegister)
         {
             var userExist = _authService.UserExists(userForRegister.Email);
             if (!userExist.Success)
             {
                 return BadRequest(userExist.Message);
             }
-            var registerResult = _authService.RegisterSecondaryAccount(userForRegister, userForRegister.Password);
-            var result = _authService.CreateAccessToken(registerResult.Data, companyId);
+            var registerResult = _authService.RegisterSecondaryAccount(userForRegister, userForRegister.Password, userForRegister.CompanyId);
+            var result = _authService.CreateAccessToken(registerResult.Data, userForRegister.CompanyId);
             if (result.Success)
             {
                 return Ok(result.Data);
@@ -67,12 +67,20 @@ namespace WepApi.Controllers
             {
                 return BadRequest(userToLogin.Message);
             }
-            var result = _authService.CreateAccessToken(userToLogin.Data, 1);
-            if (result.Success)
+
+            if(userToLogin.Data.IsActive)
             {
-                return Ok(result.Data);
+                var userCompany = _authService.GetCompany(userToLogin.Data.Id).Data;
+                var result = _authService.CreateAccessToken(userToLogin.Data, userCompany.CompanyId);
+                if (result.Success)
+                {
+                    return Ok(result.Data);
+                }
+                return BadRequest(result.Message);
             }
-            return BadRequest(result.Message);
+            return BadRequest("Kullanıcı pasif durumda. Aktif etmek için yöneticilere danışın");
+            
+           
         }
 
         [HttpGet("confirmuser")]

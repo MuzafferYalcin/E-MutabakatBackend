@@ -1,5 +1,6 @@
 ﻿using Business.Abstract;
 using Business.Constans;
+using Core.Aspects.AutoFac.Transaction;
 using Core.Entities.Concrete;
 using Core.Utilities.Hashing;
 using Core.Utilities.Results.Abstract;
@@ -28,7 +29,8 @@ namespace Business.Concrete
             _mailParameterService = mailParameterService;
             _mailTemplateService = mailTemplateService;
         }
-
+        
+        
         public IResult CompanyExistx(Company company)
         {
             var result = _companyService.CompanyExists(company);
@@ -39,24 +41,20 @@ namespace Business.Concrete
 
             return new SuccessResult();
         }
-
         public IDataResult<AccessToken> CreateAccessToken(User user, int companyId)
         {
             var claims = _userService.GetClaims(user, companyId);
             var accessToken = _tokenHelper.CreateToken(user, claims,companyId);
             return new SuccesDataResult<AccessToken>(accessToken);
         }
-
         public IDataResult<User> GetById(int id)
         {
             return new SuccesDataResult<User>(_userService.GetById(id));
         }
-
         public IDataResult<User> GetByMailConfirmValue(string value)
         {
             return new SuccesDataResult<User>(_userService.GetByMailConfirmValue(value));
         }
-
         public IDataResult<User> Login(UserForLogin userForLogin)
         {
             var userToCheck = _userService.GetByMail(userForLogin.Email);
@@ -68,7 +66,8 @@ namespace Business.Concrete
             
             return new SuccesDataResult<User>(userToCheck, Messages.SuccessfulLogin);
         }
-
+        
+        [TransactionScopeAspect]
         public IDataResult<UserCompanyDto> Register(UserForRegister userForRegister, string password, Company company)
         {
             byte[] passwordHash, passwordSalt;
@@ -134,8 +133,11 @@ namespace Business.Concrete
             };
 
             _mailService.SendMail(mailDto);
+
+            user.MailConfirmDate = DateTime.Now;
+            _userService.Update(user);
         }
-        public IDataResult<User> RegisterSecondaryAccount(UserForRegister userForRegister, string password)
+        public IDataResult<User> RegisterSecondaryAccount(UserForRegister userForRegister, string password,int companyId)
         {
             byte[] passwordHash, passwordSalt;
             HashingHelper.CreatePasswordHash(password, out passwordHash, out passwordSalt);
@@ -153,26 +155,51 @@ namespace Business.Concrete
             };
 
             _userService.Add(user);
+            _companyService.UserCompanyAdd(user.Id, companyId);
+            SendConfirmEmail(user);
+             
             return new SuccesDataResult<User>(user, Messages.UserRegistered);
         }
-
         public IResult Upadate(User user)
         {
             _userService.Update(user);
             return new SuccessResult(Messages.UserMailConfirmSuccessful);
         }
-
         public IResult UserExists(string email)
         {
             if (_userService.GetByMail(email) != null)
                 return new ErrorResult(Messages.UserAlreadyExists);
             return new SuccessResult();
         }
-
         IResult IAuthService.SendConfirmEmail(User user)
         {
+            if (user.MailConfirm == true)
+            {
+                return new ErrorResult(Messages.MailAlreadyConfirm);
+            }
+            DateTime confirmMailDate = user.MailConfirmDate;
+            DateTime now = DateTime.Now;
+            if(confirmMailDate.ToShortDateString() == now.ToShortDateString())
+            {
+                if(confirmMailDate.Hour == now.Hour && confirmMailDate.AddMinutes(5).Minute <= now.Minute)
+                {
+                    SendConfirmEmail(user);
+                    return new SuccessResult(Messages.MailConfirmSendSuccessful); 
+                }
+                else
+                {
+
+                    return new ErrorResult(Messages.MailConfirmTimeHasNotExpired);
+                }
+            }
             SendConfirmEmail(user);
-            return new SuccessResult(Messages.MailConfirmSendSuccessful); 
+            return new SuccessResult(Messages.MailConfirmSendSuccessful);
+
+        }
+
+        public IDataResult<UserCompany> GetCompany(int userId)
+        {
+            return new SuccesDataResult<UserCompany>(_companyService.GetCompany(userId).Data);
         }
     }
 }

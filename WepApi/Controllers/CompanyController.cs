@@ -1,5 +1,6 @@
 ﻿using Business.Abstract;
 using Entities.Concrete;
+using Entities.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WepApi.Controllers
@@ -22,10 +23,29 @@ namespace WepApi.Controllers
                 return Ok(result);
             return BadRequest(result.Message);
         }
-        [HttpPost("[action]")]
-        public IActionResult PostCompany(Company  company)
+
+        [HttpGet("getcompany")]
+        public IActionResult GetCompanyById(int id)
         {
-            var result = _companyService.Add(company);
+            var result = _companyService.GetById(id);
+            if (result.Success)
+                return Ok(result);
+            return BadRequest(result.Message);
+        }
+
+        [HttpPost("updateCompany")]
+        public IActionResult UpdateCompany(Company company)
+        {
+            var result = _companyService.Update(company);
+            if (result.Success)
+                return Ok(result);
+            return BadRequest(result.Message);
+        }
+
+        [HttpPost("addCompanyAndUserCompany")]
+        public IActionResult AddCompanyAndUserCompany(CompanyDto  companyDto)
+        {
+            var result = _companyService.AddCompanyAndUserCompany(companyDto);
             if (result.Success)
                 return Ok(result);
             return BadRequest(result.Message);

@@ -9,7 +9,7 @@ namespace Business.Abstract
     public interface IAuthService
     {
         IDataResult<UserCompanyDto> Register(UserForRegister userForRegister, string password, Company company);
-        IDataResult<User> RegisterSecondaryAccount(UserForRegister userForRegister, string password);
+        IDataResult<User> RegisterSecondaryAccount(UserForRegister userForRegister, string password , int companyId );
         IDataResult<User> Login(UserForLogin userForLogin);
         IDataResult<User> GetByMailConfirmValue(string value);
         IDataResult<User> GetById(int id);
@@ -18,6 +18,6 @@ namespace Business.Abstract
         IResult Upadate(User user);
         IResult CompanyExistx(Company company);
         IDataResult<AccessToken> CreateAccessToken(User user, int companyId);
-
+        IDataResult<UserCompany> GetCompany(int userId);
     }
 }
